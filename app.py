@@ -11,6 +11,15 @@ from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
+import sys
+
+# Auto-train models if missing
+models_dir = Path("models")
+if not (models_dir / "occupancy_model.pkl").exists():
+    st.info("🔄 Training models on first run... please wait")
+    from model_trainer import train_all_models
+    train_all_models()
+    st.rerun()
 
 # ─── Page Config ───
 st.set_page_config(
@@ -87,7 +96,7 @@ def load_trained_models():
 def main():
     # Header
     st.markdown("""
-        <h1>🏡 Albany Airbnb Pricing & Occupancy Dashboard</h1>
+        <h1>Albany Airbnb Pricing & Occupancy Dashboard</h1>
         <p style="text-align: center; color: #7f8c8d; font-size: 18px;">
             Get AI-powered price recommendations and occupancy predictions for your listing
         </p>
@@ -102,11 +111,11 @@ def main():
         st.stop()
     
     # Tabs for different predictions
-    tab1, tab2, tab3 = st.tabs(["💰 Price Recommendation", "📈 Occupancy Forecast", "📊 Analytics"])
+    tab1, tab2, tab3 = st.tabs(["Price Recommendation", "Occupancy Forecast", "Analytics"])
     
     # ─── TAB 1: PRICE RECOMMENDATION ───
     with tab1:
-        st.header("💰 Price Recommendation")
+        st.header("Price Recommendation")
         st.markdown("""
             Enter your listing details to get an AI-powered price recommendation.
             Our model analyzes market data to suggest optimal pricing.
@@ -115,28 +124,28 @@ def main():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            accommodates = st.number_input("👥 Guests Accommodated", min_value=1, max_value=16, value=4)
-            bedrooms = st.number_input("🛏️ Number of Bedrooms", min_value=0, max_value=10, value=2)
-            beds = st.number_input("🛏️ Number of Beds", min_value=1, max_value=15, value=3)
+            accommodates = st.number_input("Guests Accommodated", min_value=1, max_value=16, value=4)
+            bedrooms = st.number_input("Number of Bedrooms", min_value=0, max_value=10, value=2)
+            beds = st.number_input("Number of Beds", min_value=1, max_value=15, value=3)
         
         with col2:
-            room_type = st.selectbox("🏠 Room Type", ["Entire home/apt", "Private room", "Shared room"])
+            room_type = st.selectbox("Room Type", ["Entire home/apt", "Private room", "Shared room"])
             room_type_enc = {"Entire home/apt": 0, "Private room": 1, "Shared room": 2}[room_type]
-            instant_bookable = st.checkbox("⚡ Instant Bookable", value=False)
-            host_superhost = st.checkbox("⭐ Host is Superhost", value=False)
+            instant_bookable = st.checkbox("Instant Bookable", value=False)
+            host_superhost = st.checkbox("Host is Superhost", value=False)
         
         with col3:
-            minimum_nights = st.number_input("📅 Minimum Night Stay", min_value=1, max_value=365, value=1)
-            review_score = st.slider("⭐ Review Score (out of 5)", min_value=1.0, max_value=5.0, value=4.8, step=0.1)
-            num_reviews = st.number_input("📝 Number of Reviews", min_value=0, max_value=500, value=50)
+            minimum_nights = st.number_input("Minimum Night Stay", min_value=1, max_value=365, value=1)
+            review_score = st.slider("Review Score (out of 5)", min_value=1.0, max_value=5.0, value=4.8, step=0.1)
+            num_reviews = st.number_input("Number of Reviews", min_value=0, max_value=500, value=50)
         
         col_pred1, col_pred2 = st.columns(2)
         
         with col_pred1:
-            selected_date = st.date_input("📅 Select Date", value=datetime.now())
+            selected_date = st.date_input("Select Date", value=datetime.now())
         
         with col_pred2:
-            if st.button("🎯 Get Price Recommendation", key="price_btn", use_container_width=True):
+            if st.button("Get Price Recommendation", key="price_btn", use_container_width=True):
                 # Prepare features for prediction
                 date_obj = pd.to_datetime(selected_date)
                 
@@ -188,7 +197,7 @@ def main():
                     st.metric("Aggressive", f"${aggressive:.2f}")
                 
                 st.info("""
-                    **💡 Pricing Tips:**
+                    **Pricing Tips:**
                     - **Conservative**: Lower price → higher occupancy rate
                     - **Recommended**: Balanced pricing based on market data
                     - **Aggressive**: Higher price → lower occupancy, more revenue per booking
@@ -196,7 +205,7 @@ def main():
     
     # ─── TAB 2: OCCUPANCY FORECAST ───
     with tab2:
-        st.header("📈 Occupancy Forecast")
+        st.header("Occupancy Forecast")
         st.markdown("""
             Predict the likelihood of your listing being booked on specific dates.
         """)
@@ -204,30 +213,30 @@ def main():
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            accommodates_occ = st.number_input("👥 Guests Accommodated", min_value=1, max_value=16, value=4, key="occ_acc")
-            bedrooms_occ = st.number_input("🛏️ Number of Bedrooms", min_value=0, max_value=10, value=2, key="occ_bed")
-            beds_occ = st.number_input("🛏️ Number of Beds", min_value=1, max_value=15, value=3, key="occ_beds")
+            accommodates_occ = st.number_input("Guests Accommodated", min_value=1, max_value=16, value=4, key="occ_acc")
+            bedrooms_occ = st.number_input("Number of Bedrooms", min_value=0, max_value=10, value=2, key="occ_bed")
+            beds_occ = st.number_input("Number of Beds", min_value=1, max_value=15, value=3, key="occ_beds")
         
         with col2:
-            room_type_occ = st.selectbox("🏠 Room Type", ["Entire home/apt", "Private room", "Shared room"], key="occ_room")
+            room_type_occ = st.selectbox("Room Type", ["Entire home/apt", "Private room", "Shared room"], key="occ_room")
             room_type_enc_occ = {"Entire home/apt": 0, "Private room": 1, "Shared room": 2}[room_type_occ]
-            instant_bookable_occ = st.checkbox("⚡ Instant Bookable", value=False, key="occ_instant")
-            host_superhost_occ = st.checkbox("⭐ Host is Superhost", value=False, key="occ_super")
+            instant_bookable_occ = st.checkbox("Instant Bookable", value=False, key="occ_instant")
+            host_superhost_occ = st.checkbox("Host is Superhost", value=False, key="occ_super")
         
         with col3:
-            minimum_nights_occ = st.number_input("📅 Minimum Night Stay", min_value=1, max_value=365, value=1, key="occ_min")
-            review_score_occ = st.slider("⭐ Review Score (out of 5)", min_value=1.0, max_value=5.0, value=4.8, step=0.1, key="occ_score")
-            num_reviews_occ = st.number_input("📝 Number of Reviews", min_value=0, max_value=500, value=50, key="occ_reviews")
+            minimum_nights_occ = st.number_input("Minimum Night Stay", min_value=1, max_value=365, value=1, key="occ_min")
+            review_score_occ = st.slider("Review Score (out of 5)", min_value=1.0, max_value=5.0, value=4.8, step=0.1, key="occ_score")
+            num_reviews_occ = st.number_input("Number of Reviews", min_value=0, max_value=500, value=50, key="occ_reviews")
         
         col_date1, col_date2 = st.columns(2)
         
         with col_date1:
-            price_occ = st.number_input("💵 Current Price ($)", min_value=10, max_value=800, value=150)
+            price_occ = st.number_input("Current Price ($)", min_value=10, max_value=800, value=150)
         
         with col_date2:
-            selected_date_occ = st.date_input("📅 Select Date", value=datetime.now(), key="occ_date")
+            selected_date_occ = st.date_input("Select Date", value=datetime.now(), key="occ_date")
         
-        if st.button("🎯 Predict Occupancy", key="occ_btn", use_container_width=True):
+        if st.button("Predict Occupancy", key="occ_btn", use_container_width=True):
             # Prepare features
             date_obj_occ = pd.to_datetime(selected_date_occ)
             
@@ -319,29 +328,29 @@ def main():
             
             insights = []
             if is_weekend:
-                insights.append("📅 **Weekend booking**: Weekends typically have higher demand in Albany")
+                insights.append("**Weekend booking**: Weekends typically have higher demand in Albany")
             else:
-                insights.append("📅 **Weekday booking**: Weekdays may have lower demand but attract longer stays")
+                insights.append("**Weekday booking**: Weekdays may have lower demand but attract longer stays")
             
             if review_score_occ >= 4.8:
-                insights.append("⭐ **Excellent reviews**: Your high rating increases booking likelihood")
+                insights.append("**Excellent reviews**: Your high rating increases booking likelihood")
             elif review_score_occ >= 4.5:
-                insights.append("⭐ **Good reviews**: Strong ratings help attract bookings")
+                insights.append("**Good reviews**: Strong ratings help attract bookings")
             else:
-                insights.append("⭐ **Review opportunity**: Higher ratings can increase bookings")
+                insights.append("**Review opportunity**: Higher ratings can increase bookings")
             
             if host_superhost_occ:
-                insights.append("🌟 **Superhost status**: This boosts your listing's visibility and trustworthiness")
+                insights.append("**Superhost status**: This boosts your listing's visibility and trustworthiness")
             
             if instant_bookable_occ:
-                insights.append("⚡ **Instant booking**: Instant booking option can increase conversion rates")
+                insights.append("**Instant booking**: Instant booking option can increase conversion rates")
             
             for insight in insights:
                 st.write(insight)
     
     # ─── TAB 3: ANALYTICS ───
     with tab3:
-        st.header("📊 Analytics & Insights")
+        st.header("Analytics & Insights")
         
         st.markdown("""
             Understand market trends and factors affecting pricing and occupancy in Albany.
@@ -350,7 +359,7 @@ def main():
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("📅 Day of Week Impact")
+            st.subheader("Day of Week Impact")
             days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
             # Simulated data - in production this would come from actual model analysis
             occupancy_by_day = [0.42, 0.40, 0.41, 0.43, 0.52, 0.68, 0.65]
@@ -367,7 +376,7 @@ def main():
             st.plotly_chart(fig_dow, use_container_width=True)
         
         with col2:
-            st.subheader("🏠 Room Type Comparison")
+            st.subheader("Room Type Comparison")
             room_types = ["Entire Home", "Private Room", "Shared Room"]
             avg_price = [185, 95, 65]
             occupancy_rate = [0.58, 0.52, 0.48]
@@ -389,7 +398,7 @@ def main():
         col3, col4 = st.columns(2)
         
         with col3:
-            st.subheader("💰 Price Range Distribution")
+            st.subheader("Price Range Distribution")
             price_ranges = ["$20-50", "$50-100", "$100-150", "$150-200", "$200+"]
             listings_count = [45, 120, 185, 95, 35]
             
@@ -428,7 +437,7 @@ def main():
         st.divider()
         
         st.markdown("""
-            ### 🎯 Key Takeaways
+            ### Key Takeaways
             
             - **Weekends are 50% busier** than weekdays - consider premium weekend pricing
             - **Entire homes** command 2x the price of private rooms with similar occupancy
