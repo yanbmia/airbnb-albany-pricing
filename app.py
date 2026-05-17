@@ -75,12 +75,14 @@ st.markdown("""
 @st.cache_resource
 def load_trained_models():
     """Load pre-trained models"""
+    model_dir = Path('./models')
+    
+    # Check if models exist
+    if not (model_dir / 'occupancy_model.pkl').exists():
+        st.error("❌ Models not found. Please run: `python model_trainer.py`")
+        st.stop()
+    
     try:
-        model_dir = Path('./models')
-        if not model_dir.exists():
-            st.error("⚠️ Models not found. Please run model_trainer.py first.")
-            return None, None, None, None
-        
         occupancy_model = joblib.load(f'{model_dir}/occupancy_model.pkl')
         occupancy_features = joblib.load(f'{model_dir}/occupancy_features.pkl')
         price_model = joblib.load(f'{model_dir}/price_model.pkl')
@@ -88,8 +90,8 @@ def load_trained_models():
         
         return occupancy_model, occupancy_features, price_model, price_features
     except Exception as e:
-        st.error(f"Error loading models: {e}")
-        return None, None, None, None
+        st.error(f"❌ Error loading models: {e}")
+        st.stop()
 
 
 # ─── Main App ───
@@ -107,8 +109,9 @@ def main():
     # Load models
     occ_model, occ_features, price_model, price_features = load_trained_models()
     
+    # If models failed to load, stop execution
     if occ_model is None:
-        st.stop()
+        return
     
     # Tabs for different predictions
     tab1, tab2, tab3 = st.tabs(["Price Recommendation", "Occupancy Forecast", "Analytics"])

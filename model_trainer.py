@@ -37,8 +37,8 @@ def load_and_prepare_data(data_root='./albany-data'):
 def prepare_features(calendar_df, listings_df, reviews_df):
     """Prepare features for modeling"""
     
-    # Merge data
-    df = calendar_df.merge(listings_df, on='listing_id', how='left')
+    # Merge data - listings uses 'id' instead of 'listing_id'
+    df = calendar_df.merge(listings_df, left_on='listing_id', right_on='id', how='left', suffixes=('_calendar', '_listing'))
     df = df.merge(reviews_df.groupby('listing_id').size().reset_index(name='number_of_reviews'), 
                   on='listing_id', how='left')
     
@@ -55,8 +55,8 @@ def prepare_features(calendar_df, listings_df, reviews_df):
     df['quarter'] = df['date'].dt.quarter
     df['day_of_month'] = df['date'].dt.day
     
-    # Price features
-    df['price_num'] = df['price'].str.replace('$', '').str.replace(',', '').astype(float)
+    # Price features - use calendar price (already numeric)
+    df['price_num'] = df['price_calendar'].fillna(df['price_listing']).fillna(50)  # fallback to $50 if missing
     
     # Room type encoding
     if 'room_type' in df.columns:
@@ -71,6 +71,20 @@ def prepare_features(calendar_df, listings_df, reviews_df):
     numeric_cols = df.select_dtypes(include=[np.number]).columns
     for col in numeric_cols:
         df[col] = df[col].fillna(df[col].median())
+    
+    # Ensure correct data types for LightGBM
+    if 'instant_bookable' in df.columns:
+        df['instant_bookable'] = (df['instant_bookable'].astype(str).str.lower() == 't').astype(int)
+    else:
+        df['instant_bookable'] = 0
+    
+    if 'host_is_superhost' in df.columns:
+        df['host_is_superhost'] = (df['host_is_superhost'].astype(str).str.lower() == 't').astype(int)
+    else:
+        df['host_is_superhost'] = 0
+    
+    # Ensure price_num is float
+    df['price_num'] = pd.to_numeric(df['price_num'], errors='coerce').fillna(50)
     
     print("✓ Features prepared successfully")
     return df
