@@ -152,6 +152,7 @@ def main():
                 # Prepare features for prediction
                 date_obj = pd.to_datetime(selected_date)
                 
+                # Create input with all possible features
                 input_data = pd.DataFrame({
                     'month': [date_obj.month],
                     'day_of_week_n': [date_obj.dayofweek],
@@ -167,10 +168,11 @@ def main():
                     'host_is_superhost': [int(host_superhost)],
                     'price_num': [150],  # Placeholder
                     'room_type_enc': [room_type_enc],
+                    'neighbourhood_occ_mean': [0.5],  # Default neighborhood occupancy
                 })
                 
-                # Filter features that model expects
-                input_data = input_data[[f for f in price_features if f in input_data.columns]]
+                # Select only features the model expects, in the correct order
+                input_data = input_data[price_features]
                 
                 # Predict
                 pred_log = price_model.predict(input_data)[0]
@@ -258,10 +260,11 @@ def main():
                 'host_is_superhost': [int(host_superhost_occ)],
                 'price_num': [price_occ],
                 'room_type_enc': [room_type_enc_occ],
+                'neighbourhood_occ_mean': [0.5],  # Default neighborhood occupancy
             })
             
-            # Filter features
-            input_data_occ = input_data_occ[[f for f in occ_features if f in input_data_occ.columns]]
+            # Select only features the model expects, in the correct order
+            input_data_occ = input_data_occ[occ_features]
             
             # Predict
             pred_proba = occ_model.predict_proba(input_data_occ)[0]
