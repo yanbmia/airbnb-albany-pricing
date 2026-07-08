@@ -15,12 +15,12 @@ Short-term rental hosts set prices manually, with no visibility into demand for 
 
 ## Approach
 
-**Time-aware validation.** This is panel/time-series data, so train/test and cross-validation splits are chronological, not random — an 8-month train / 3-month test split (73/27), confirmed with a 5-fold expanding-window time-series CV (not k-fold) to check the split was representative.
+**Time-aware validation.** This is panel/time-series data, so train/test and cross-validation splits are chronological, an 8-month train / 3-month test split (73/27), confirmed with a 5-fold expanding-window time-series CV (not k-fold) to check the split was representative.
 
 **Leakage auditing.** Every feature was checked against the rule "a prediction for day *t* can only use information available before *t*":
 - Lag features (bookings in the last 30/60 days, rolling occupancy) use `.shift(1)` so the current day is never included in its own input.
 - A neighbourhood-occupancy feature originally leaked future test-period data into its encoding; replaced with K-fold target encoding fit only on training data.
-- Removing all lag features as a diagnostic dropped LightGBM AUC from 0.928 → 0.894 (LR: 0.767 → 0.622) — a believable, non-suspicious drop, which is evidence the lag features add real signal rather than leak the label.
+- Removing all lag features as a diagnostic dropped LightGBM AUC from 0.928 → 0.894 (LR: 0.767 → 0.622), which is evidence the lag features add real signal rather than leak the label.
 
 **Feature engineering.** Date/seasonality features, log-transformed price, K-fold target-encoded neighbourhood occupancy, rolling booking/occupancy lag features, and a KNN-engineered "competitor price" feature (haversine-distance nearest neighbors of the same room type, within 2km) used by the price model.
 
@@ -66,7 +66,7 @@ README.md                       # this file
 
 ## Limitations & future work
 
-- A census-income enrichment feature was attempted but never fully wired up: Albany listings are labeled by city ward, Census data is by tract, and there's no public ward↔tract lookup — a real fix needs a spatial join (`geopandas`), not a hand-typed name mapping. Documented honestly in the notebook rather than faked.
+- A census-income enrichment feature was attempted but never fully wired up: Albany listings are labeled by city ward, Census data is by tract, and there's no public ward↔tract lookup. A real fix would need a spatial join (`geopandas`) instead of a hand-typed name mapping.
 - Price model R² (0.35) suggests unobserved factors (photos, amenities, exact location) matter more for price than for occupancy.
 - Single-market model (Albany only, 478 listings); would need retraining, not just re-scoring, for another city.
 
