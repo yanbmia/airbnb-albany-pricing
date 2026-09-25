@@ -49,14 +49,6 @@ LightGBM alone: 96% accuracy, 0.96 precision / 0.90 recall on the "booked" class
 
 Python · pandas/numpy · scikit-learn · LightGBM · matplotlib/seaborn/plotly · U.S. Census ACS5 API · joblib
 
-## Repo structure
-
-```
-airbnb_albany_portfolio.ipynb   # full analysis: EDA → feature engineering → modeling → evaluation
-Group B6_Project Report.pdf     # original written report (methodology + deployment write-up)
-README.md                       # this file
-```
-
 ## How to run
 
 1. Get the Albany, NY data from [Inside Airbnb](http://insideairbnb.com/get-the-data.html) (calendar, listings, reviews — multiple monthly snapshots).
@@ -70,6 +62,3 @@ README.md                       # this file
 - Price model R² (0.35) suggests unobserved factors (photos, amenities, exact location) matter more for price than for occupancy.
 - Single-market model (Albany only, 478 listings); would need retraining, not just re-scoring, for another city.
 
-## Deployment design
-
-Both models are serialized with `joblib` and intended to be served behind a thin REST API (e.g. FastAPI): a client sends listing attributes + target date, and the response includes a booking-probability, a price recommendation, and a demand tier — see the project report for the full design.
